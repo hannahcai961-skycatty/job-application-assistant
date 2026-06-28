@@ -1,0 +1,32 @@
+# Job Application Assistant — 岗位状态机
+# 前后端 MUST 使用此处定义的状态 ID 与 label
+
+states:
+  - id: pending
+    label: 待投递
+    description: 已录入 JD，尚未投递
+    transitions: [greeted, emailed, dropped]
+
+  - id: greeted
+    label: 已打招呼
+    description: Boss 直聘已发送招呼语
+    transitions: [replied, dropped]
+
+  - id: emailed
+    label: 已发邮件
+    description: 邮箱投递已发送
+    transitions: [replied, dropped]
+
+  - id: replied
+    label: 已回复
+    description: 收到 HR / 业务方回复
+    transitions: [dropped]
+
+  - id: dropped
+    label: 放弃
+    description: 不再跟进此岗位
+    transitions: []
+
+match_thresholds:
+  apply: 75
+  consider: 60

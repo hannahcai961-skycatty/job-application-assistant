@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Application Assistant</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Job Application Assistant</h1>
+      <p>秋招 AI 产品岗 · Boss + 邮箱投递助手</p>
+    </div>
+    <nav>
+      <button data-panel="dashboard" class="active">仪表盘</button>
+      <button data-panel="experiences">经历素材</button>
+      <button data-panel="resumes">简历</button>
+      <button data-panel="jobs">岗位库</button>
+      <button data-panel="ai">AI 工作台</button>
+      <button data-panel="settings">设置</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 仪表盘 -->
+    <section id="panel-dashboard" class="panel active">
+      <div class="grid-2">
+        <div class="card">
+          <h2>待投递岗位</h2>
+          <p style="font-size:2rem;margin:0" id="stat-pending">0</p>
+        </div>
+        <div class="card">
+          <h2>数据概览</h2>
+          <p>经历 <strong id="stat-experiences">0</strong> 条 · 简历 <strong id="stat-resumes">0</strong> 版</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>快速开始</h2>
+        <ol>
+          <li>在「设置」中配置 DeepSeek API Key</li>
+          <li>录入「经历素材」与至少一版「简历」</li>
+          <li>将 JD 存入「岗位库」，在「AI 工作台」生成招呼语或邮件</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 经历素材 -->
+    <section id="panel-experiences" class="panel">
+      <div class="card">
+        <h2>添加经历</h2>
+        <form id="form-experience">
+          <div class="grid-2">
+            <div>
+              <label>标题</label>
+              <input name="title" required placeholder="如：XX 实习 - 需求分析" />
+            </div>
+            <div>
+              <label>类别</label>
+              <select name="category">
+                <option value="internship">实习</option>
+                <option value="project">项目</option>
+                <option value="competition">竞赛</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+          </div>
+          <label>标签（逗号分隔）</label>
+          <input name="tags" placeholder="LLM, 用户调研, A/B测试" />
+          <label>经历描述</label>
+          <textarea name="content" placeholder="STAR 法则描述完整经历…"></textarea>
+          <button type="submit" class="btn">保存经历</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>经历列表</h2>
+        <div id="experience-list"></div>
+      </div>
+    </section>
+
+    <!-- 简历 -->
+    <section id="panel-resumes" class="panel">
+      <div class="card">
+        <h2>新建简历版本</h2>
+        <form id="form-resume">
+          <label>版本名称</label>
+          <input name="name" required placeholder="如：ai-pm-general" />
+          <label>说明</label>
+          <input name="description" placeholder="适用场景简述" />
+          <label>简历正文（Markdown）</label>
+          <textarea name="content" rows="12" placeholder="# 姓名&#10;## 教育背景&#10;…"></textarea>
+          <label><input type="checkbox" name="is_default" /> 设为默认简历</label>
+          <button type="submit" class="btn">保存简历</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>简历版本</h2>
+        <div id="resume-list"></div>
+      </div>
+    </section>
+
+    <!-- 岗位库 -->
+    <section id="panel-jobs" class="panel">
+      <div class="card">
+        <h2>录入岗位</h2>
+        <form id="form-job">
+          <div class="grid-2">
+            <div>
+              <label>公司</label>
+              <input name="company" required />
+            </div>
+            <div>
+              <label>岗位</label>
+              <input name="position" required placeholder="AI 产品经理" />
+            </div>
+          </div>
+          <div class="grid-2">
+            <div>
+              <label>来源</label>
+              <select name="source">
+                <option value="boss">Boss 直聘</option>
+                <option value="email">邮箱</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+            <div>
+              <label>备注</label>
+              <input name="notes" />
+            </div>
+          </div>
+          <label>JD 全文</label>
+          <textarea name="jd_text" rows="8" placeholder="粘贴岗位描述…"></textarea>
+          <button type="submit" class="btn">保存岗位</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>岗位列表</h2>
+        <div id="job-list"></div>
+      </div>
+    </section>
+
+    <!-- AI 工作台 -->
+    <section id="panel-ai" class="panel">
+      <div class="card notice">
+        <strong>Human-in-the-Loop：</strong>生成内容请人工核对后再复制到 Boss 或邮箱发送。本工具不会自动投递。
+      </div>
+      <div class="card">
+        <h2>AI 生成</h2>
+        <div class="grid-2">
+          <div>
+            <label>选择简历</label>
+            <select id="ai-resume"></select>
+          </div>
+          <div>
+            <label>选择岗位（可选）</label>
+            <select id="ai-job"></select>
+          </div>
+        </div>
+        <label>JD 文本</label>
+        <textarea id="ai-jd" rows="6" placeholder="粘贴或从岗位库选择…"></textarea>
+        <div class="grid-2">
+          <div>
+            <label>流水线渠道</label>
+            <select id="ai-channel">
+              <option value="boss">Boss 招呼语</option>
+              <option value="email">邮箱话术</option>
+            </select>
+          </div>
+          <div>
+            <label>邮件收件人称呼（仅邮箱）</label>
+            <input id="ai-recipient" placeholder="招聘负责人" />
+          </div>
+        </div>
+        <label><input type="checkbox" id="ai-include-tune" checked /> 匹配分 ≥ 60 时自动请求微调建议</label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <button class="btn" id="btn-pipeline">一键流水线</button>
+          <button class="btn btn-secondary" id="btn-match">匹配度分析</button>
+          <button class="btn btn-secondary" id="btn-tune">简历微调建议</button>
+          <button class="btn btn-secondary" id="btn-boss">Boss 招呼语</button>
+          <button class="btn btn-secondary" id="btn-email">邮箱话术</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>匹配度 / 微调</h2>
+        <div class="output" id="output-match">—</div>
+        <div class="output" id="output-tune" style="margin-top:0.5rem">—</div>
+      </div>
+      <div class="card">
+        <h2>Boss 招呼语 <button class="btn btn-secondary" data-copy="output-boss">复制</button></h2>
+        <div class="output" id="output-boss">—</div>
+      </div>
+      <div class="card">
+        <h2>邮箱话术 <button class="btn btn-secondary" data-copy="output-email">复制</button></h2>
+        <div class="output" id="output-email">—</div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="panel-settings" class="panel">
+      <div class="card">
+        <h2>DeepSeek 配置</h2>
+        <p>API Key 状态：<strong id="settings-key-status">—</strong></p>
+        <form id="form-settings">
+          <label>API Key（留空则不修改）</label>
+          <input name="api_key" type="password" placeholder="sk-..." autocomplete="off" />
+          <label>模型</label>
+          <input name="model" id="settings-model" value="deepseek-chat" />
+          <button type="submit" class="btn">保存设置</button>
+        </form>
+        <p style="font-size:0.85rem;color:var(--muted);margin-top:1rem">
+          Key 保存在本地 <code>data/settings.json</code>，不会提交到 Git。
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
