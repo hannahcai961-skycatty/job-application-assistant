@@ -31,6 +31,7 @@ jds/*
 config/profile.yml
 cv.md
 voice-dna.md
+*.pptx
 
 # IDE
 .idea/
