@@ -1,5 +1,7 @@
 # Job Application Assistant
 
+> **一句话**：秋招 AI 产品岗本地 Web 投递助手 → 根据 JD 自动评估匹配度、微调简历并生成 Boss 招呼语/邮件话术 → FastAPI + 原生 JS + DeepSeek API → `pip install -r requirements.txt`，配置 `.env` 后运行 `python -m src.backend.main`，浏览器打开 http://127.0.0.1:8000。
+
 秋招 **AI 产品岗**投递助手：JD 驱动改简历、生成 Boss 招呼语与邮箱话术，数据本地存储。
 
 > **不是海投工具，是过滤器。** 匹配度低于 60 时系统会建议 skip——你的时间比盲目定制更值钱。  

@@ -24,7 +24,12 @@ def _resolve_model() -> str:
     return local or settings.deepseek_model
 
 
-async def chat_completion(prompt: str, temperature: float = 0.7) -> str:
+async def chat_completion(
+    prompt: str,
+    temperature: float = 0.7,
+    *,
+    image_data_url: str | None = None,
+) -> str:
     api_key = _resolve_api_key()
     if not api_key:
         raise DeepSeekError("未配置 DeepSeek API Key，请在设置页或 .env 中填写")
@@ -34,18 +39,42 @@ async def chat_completion(prompt: str, temperature: float = 0.7) -> str:
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
+    if image_data_url:
+        content: str | list[dict[str, Any]] = [
+            {"type": "image_url", "image_url": {"url": image_data_url}},
+            {"type": "text", "text": prompt},
+        ]
+    else:
+        content = prompt
     payload = {
         "model": _resolve_model(),
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
         "temperature": temperature,
     }
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(url, headers=headers, json=payload)
         if response.status_code != 200:
-            raise DeepSeekError(f"DeepSeek 请求失败: {response.status_code}")
+            raise DeepSeekError(f"DeepSeek 请求失败: {response.status_code} {response.text[:200]}")
         data = response.json()
         return data["choices"][0]["message"]["content"]
+
+
+_OCR_PROMPT = """从这张招聘/岗位截图中提取信息。只根据图中可见文字，不要编造。
+请按以下 JSON 输出（仅 JSON，无 markdown）：
+{
+  "company": "公司名，没有则空字符串",
+  "position": "岗位名称，没有则空字符串",
+  "url": "图中可见的投递或岗位链接，没有则空字符串",
+  "jd_text": "岗位要求/职责/任职条件的完整转写",
+  "raw_text": "图中主要文字的转写"
+}"""
+
+
+async def extract_ocr(image_b64: str, mime: str) -> dict[str, Any]:
+    data_url = f"data:{mime};base64,{image_b64}"
+    raw = await chat_completion(_OCR_PROMPT, temperature=0.1, image_data_url=data_url)
+    return _parse_json(raw)
 
 
 def _format_bullets(experiences: list[dict]) -> str:

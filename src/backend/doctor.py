@@ -60,7 +60,7 @@ def run_doctor() -> dict[str, Any]:
 
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    for name in ("experiences", "resumes", "jobs", "generations"):
+    for name in ("jobs", "generations"):
         p = DATA_DIR / f"{name}.json"
         if p.exists():
             try:

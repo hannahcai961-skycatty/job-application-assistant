@@ -4,193 +4,120 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Job Application Assistant</title>
-  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/style.css?v=5" />
 </head>
 <body>
   <header>
     <div>
       <h1>Job Application Assistant</h1>
-      <p>秋招 AI 产品岗 · Boss + 邮箱投递助手</p>
+      <p>秋招 · 岗位评估 · 投递表 · 邮箱话术</p>
     </div>
     <nav>
       <button data-panel="dashboard" class="active">仪表盘</button>
-      <button data-panel="experiences">经历素材</button>
-      <button data-panel="resumes">简历</button>
-      <button data-panel="jobs">岗位库</button>
+      <button data-panel="evaluate">岗位评估</button>
+      <button data-panel="tracker">投递表</button>
       <button data-panel="ai">AI 工作台</button>
       <button data-panel="settings">设置</button>
     </nav>
   </header>
 
   <main>
-    <!-- 仪表盘 -->
+    <!-- 仪表盘：投递总览 -->
     <section id="panel-dashboard" class="panel active">
-      <div class="grid-2">
-        <div class="card">
-          <h2>待投递岗位</h2>
-          <p style="font-size:2rem;margin:0" id="stat-pending">0</p>
+      <div id="stat-cards" class="stats"></div>
+      <div class="card">
+        <h2>全部投递</h2>
+        <div id="dash-jobs"></div>
+      </div>
+    </section>
+
+    <!-- 岗位评估：OCR → 分数+理由 → 可写入投递表 -->
+    <section id="panel-evaluate" class="panel">
+      <div class="card">
+        <h2>1. 截图 OCR</h2>
+        <p class="preview">上传岗位截图，或在下方区域按 Ctrl+V 粘贴剪贴板里的截图。</p>
+        <input id="eval-file" type="file" accept="image/*" />
+        <div id="eval-paste" class="paste-zone" tabindex="0">点击此处后按 Ctrl+V，从剪贴板粘贴截图</div>
+        <button class="btn" id="btn-eval-ocr" type="button">识别截图</button>
+      </div>
+      <div class="card">
+        <h2>2. 识别结果</h2>
+        <div class="grid-2">
+          <div>
+            <label>公司</label>
+            <input id="eval-company" />
+          </div>
+          <div>
+            <label>岗位</label>
+            <input id="eval-position" />
+          </div>
         </div>
-        <div class="card">
-          <h2>数据概览</h2>
-          <p>经历 <strong id="stat-experiences">0</strong> 条 · 简历 <strong id="stat-resumes">0</strong> 版</p>
+        <label>链接</label>
+        <input id="eval-url" />
+        <label>岗位要求</label>
+        <textarea id="eval-jd" rows="10" placeholder="OCR 后出现在这里，也可手改"></textarea>
+        <button class="btn" id="btn-eval-match" type="button">评估匹配度</button>
+      </div>
+      <div class="card">
+        <h2>3. 分数 + 理由</h2>
+        <div class="output" id="eval-output">—</div>
+        <div class="row-actions">
+          <button class="btn" id="btn-eval-save" type="button">写入投递表</button>
         </div>
       </div>
+    </section>
+
+    <!-- 投递表 -->
+    <section id="panel-tracker" class="panel">
       <div class="card">
-        <h2>快速开始</h2>
-        <ol>
-          <li>在「设置」中配置 DeepSeek API Key</li>
-          <li>录入「经历素材」与至少一版「简历」</li>
-          <li>将 JD 存入「岗位库」，在「AI 工作台」生成招呼语或邮件</li>
-        </ol>
+        <h2>投递记录</h2>
+        <div class="row-actions" style="margin-bottom:0.75rem">
+          <button class="btn" id="btn-add-job" type="button">新增一行</button>
+        </div>
+        <div class="table-wrap">
+          <table class="sheet">
+            <thead>
+              <tr>
+                <th>公司</th>
+                <th>岗位</th>
+                <th>渠道</th>
+                <th>状态</th>
+                <th>投递日</th>
+                <th>面试轮次</th>
+                <th>备注</th>
+                <th>分数</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tracker-body"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- 经历素材 -->
-    <section id="panel-experiences" class="panel">
-      <div class="card">
-        <h2>添加经历</h2>
-        <form id="form-experience">
-          <div class="grid-2">
-            <div>
-              <label>标题</label>
-              <input name="title" required placeholder="如：XX 实习 - 需求分析" />
-            </div>
-            <div>
-              <label>类别</label>
-              <select name="category">
-                <option value="internship">实习</option>
-                <option value="project">项目</option>
-                <option value="competition">竞赛</option>
-                <option value="other">其他</option>
-              </select>
-            </div>
-          </div>
-          <label>标签（逗号分隔）</label>
-          <input name="tags" placeholder="LLM, 用户调研, A/B测试" />
-          <label>经历描述</label>
-          <textarea name="content" placeholder="STAR 法则描述完整经历…"></textarea>
-          <button type="submit" class="btn">保存经历</button>
-        </form>
-      </div>
-      <div class="card">
-        <h2>经历列表</h2>
-        <div id="experience-list"></div>
-      </div>
-    </section>
-
-    <!-- 简历 -->
-    <section id="panel-resumes" class="panel">
-      <div class="card">
-        <h2>新建简历版本</h2>
-        <form id="form-resume">
-          <label>版本名称</label>
-          <input name="name" required placeholder="如：ai-pm-general" />
-          <label>说明</label>
-          <input name="description" placeholder="适用场景简述" />
-          <label>简历正文（Markdown）</label>
-          <textarea name="content" rows="12" placeholder="# 姓名&#10;## 教育背景&#10;…"></textarea>
-          <label><input type="checkbox" name="is_default" /> 设为默认简历</label>
-          <button type="submit" class="btn">保存简历</button>
-        </form>
-      </div>
-      <div class="card">
-        <h2>简历版本</h2>
-        <div id="resume-list"></div>
-      </div>
-    </section>
-
-    <!-- 岗位库 -->
-    <section id="panel-jobs" class="panel">
-      <div class="card">
-        <h2>录入岗位</h2>
-        <form id="form-job">
-          <div class="grid-2">
-            <div>
-              <label>公司</label>
-              <input name="company" required />
-            </div>
-            <div>
-              <label>岗位</label>
-              <input name="position" required placeholder="AI 产品经理" />
-            </div>
-          </div>
-          <div class="grid-2">
-            <div>
-              <label>来源</label>
-              <select name="source">
-                <option value="boss">Boss 直聘</option>
-                <option value="email">邮箱</option>
-                <option value="other">其他</option>
-              </select>
-            </div>
-            <div>
-              <label>备注</label>
-              <input name="notes" />
-            </div>
-          </div>
-          <label>JD 全文</label>
-          <textarea name="jd_text" rows="8" placeholder="粘贴岗位描述…"></textarea>
-          <button type="submit" class="btn">保存岗位</button>
-        </form>
-      </div>
-      <div class="card">
-        <h2>岗位列表</h2>
-        <div id="job-list"></div>
-      </div>
-    </section>
-
-    <!-- AI 工作台 -->
+    <!-- AI 工作台：仅邮箱话术 -->
     <section id="panel-ai" class="panel">
       <div class="card notice">
-        <strong>Human-in-the-Loop：</strong>生成内容请人工核对后再复制到 Boss 或邮箱发送。本工具不会自动投递。
+        <strong>人工核对后再发送。</strong>本工具不会自动发邮件。
       </div>
       <div class="card">
-        <h2>AI 生成</h2>
-        <div class="grid-2">
-          <div>
-            <label>选择简历</label>
-            <select id="ai-resume"></select>
-          </div>
-          <div>
-            <label>选择岗位（可选）</label>
-            <select id="ai-job"></select>
-          </div>
-        </div>
-        <label>JD 文本</label>
-        <textarea id="ai-jd" rows="6" placeholder="粘贴或从岗位库选择…"></textarea>
-        <div class="grid-2">
-          <div>
-            <label>流水线渠道</label>
-            <select id="ai-channel">
-              <option value="boss">Boss 招呼语</option>
-              <option value="email">邮箱话术</option>
-            </select>
-          </div>
-          <div>
-            <label>邮件收件人称呼（仅邮箱）</label>
-            <input id="ai-recipient" placeholder="招聘负责人" />
-          </div>
-        </div>
-        <label><input type="checkbox" id="ai-include-tune" checked /> 匹配分 ≥ 60 时自动请求微调建议</label>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
-          <button class="btn" id="btn-pipeline">一键流水线</button>
-          <button class="btn btn-secondary" id="btn-match">匹配度分析</button>
-          <button class="btn btn-secondary" id="btn-tune">简历微调建议</button>
-          <button class="btn btn-secondary" id="btn-boss">Boss 招呼语</button>
-          <button class="btn btn-secondary" id="btn-email">邮箱话术</button>
-        </div>
+        <h2>JD 来源</h2>
+        <label>从投递表读取</label>
+        <select id="ai-job">
+          <option value="">不从投递表读取</option>
+        </select>
+        <label>或粘贴 JD</label>
+        <textarea id="ai-jd" rows="8" placeholder="粘贴岗位描述…"></textarea>
+        <label>或 OCR 截图（可粘贴）</label>
+        <input id="ai-file" type="file" accept="image/*" />
+        <div id="ai-paste" class="paste-zone" tabindex="0">点击此处后按 Ctrl+V，从剪贴板粘贴截图</div>
+        <button class="btn btn-secondary" id="btn-ai-ocr" type="button">识别到 JD 框</button>
+        <label>收件人称呼</label>
+        <input id="ai-recipient" placeholder="招聘负责人" />
+        <button class="btn" id="btn-email" type="button">生成邮箱话术</button>
       </div>
       <div class="card">
-        <h2>匹配度 / 微调</h2>
-        <div class="output" id="output-match">—</div>
-        <div class="output" id="output-tune" style="margin-top:0.5rem">—</div>
-      </div>
-      <div class="card">
-        <h2>Boss 招呼语 <button class="btn btn-secondary" data-copy="output-boss">复制</button></h2>
-        <div class="output" id="output-boss">—</div>
-      </div>
-      <div class="card">
-        <h2>邮箱话术 <button class="btn btn-secondary" data-copy="output-email">复制</button></h2>
+        <h2>邮箱话术 <button class="btn btn-secondary" data-copy="output-email" type="button">复制</button></h2>
         <div class="output" id="output-email">—</div>
       </div>
     </section>
@@ -205,6 +132,12 @@
           <input name="api_key" type="password" placeholder="sk-..." autocomplete="off" />
           <label>模型</label>
           <input name="model" id="settings-model" value="deepseek-chat" />
+          <label>个人材料（PDF / Word / Markdown / TXT）</label>
+          <p class="preview" id="profile-status">尚未上传。匹配评估和邮箱话术会直接读取这份文档。</p>
+          <input id="profile-file" type="file" accept=".pdf,.docx,.txt,.md,.markdown,.prd,application/pdf" />
+          <button class="btn btn-secondary" id="btn-profile" type="button">上传文档</button>
+          <label>已提取文本预览</label>
+          <textarea id="settings-profile" rows="8" readonly placeholder="上传后在这里预览提取出的文字"></textarea>
           <button type="submit" class="btn">保存设置</button>
         </form>
         <p style="font-size:0.85rem;color:var(--muted);margin-top:1rem">
@@ -215,6 +148,6 @@
   </main>
 
   <div class="toast" id="toast"></div>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=5"></script>
 </body>
 </html>

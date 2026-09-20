@@ -236,6 +236,103 @@ textarea {
   font-size: 0.9rem;
 }
 
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
+.stat .num {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stat .label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table.sheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+table.sheet th,
+table.sheet td {
+  border: 1px solid var(--border);
+  padding: 0.25rem;
+  vertical-align: top;
+}
+
+table.sheet th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.45rem 0.4rem;
+  white-space: nowrap;
+}
+
+table.sheet input,
+table.sheet select,
+table.sheet textarea {
+  margin: 0;
+  border: none;
+  background: transparent;
+  padding: 0.3rem 0.35rem;
+  min-width: 6rem;
+}
+
+table.sheet textarea {
+  min-height: 2.4rem;
+  min-width: 10rem;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preview {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.paste-zone {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  background: #f8fafc;
+  cursor: text;
+}
+
+.paste-zone:focus {
+  outline: 2px solid var(--primary);
+  color: var(--text);
+}
+
+
 .rec-apply { color: var(--success); font-weight: 600; }
 .rec-consider { color: #d97706; font-weight: 600; }
 .rec-skip { color: #dc2626; font-weight: 600; }
