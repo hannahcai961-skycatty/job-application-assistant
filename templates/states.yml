@@ -4,27 +4,27 @@
 states:
   - id: pending
     label: 待投递
-    description: 已录入 JD，尚未投递
-    transitions: [greeted, emailed, dropped]
+    description: 已录入，尚未投递
+    transitions: [applied, rejected]
 
-  - id: greeted
-    label: 已打招呼
-    description: Boss 直聘已发送招呼语
-    transitions: [replied, dropped]
+  - id: applied
+    label: 已投递
+    description: 已完成投递
+    transitions: [interview_pending, interviewing, rejected]
 
-  - id: emailed
-    label: 已发邮件
-    description: 邮箱投递已发送
-    transitions: [replied, dropped]
+  - id: interview_pending
+    label: 待面试
+    description: 已约面或等待面试安排
+    transitions: [interviewing, rejected]
 
-  - id: replied
-    label: 已回复
-    description: 收到 HR / 业务方回复
-    transitions: [dropped]
+  - id: interviewing
+    label: 面试中
+    description: 面试流程进行中
+    transitions: [rejected]
 
-  - id: dropped
-    label: 放弃
-    description: 不再跟进此岗位
+  - id: rejected
+    label: 已拒
+    description: 未通过或主动放弃
     transitions: []
 
 match_thresholds:

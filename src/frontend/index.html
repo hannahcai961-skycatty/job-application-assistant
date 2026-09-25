@@ -4,13 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Job Application Assistant</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=5" />
+  <link rel="stylesheet" href="/static/css/style.css?v=13" />
 </head>
 <body>
   <header>
     <div>
       <h1>Job Application Assistant</h1>
-      <p>秋招 · 岗位评估 · 投递表 · 邮箱话术</p>
     </div>
     <nav>
       <button data-panel="dashboard" class="active">仪表盘</button>
@@ -79,9 +78,9 @@
             <thead>
               <tr>
                 <th>公司</th>
-                <th>岗位</th>
+                <th class="col-position">岗位</th>
                 <th>渠道</th>
-                <th>状态</th>
+                <th class="col-status">状态</th>
                 <th>投递日</th>
                 <th>面试轮次</th>
                 <th>备注</th>
@@ -125,29 +124,43 @@
     <!-- 设置 -->
     <section id="panel-settings" class="panel">
       <div class="card">
-        <h2>DeepSeek 配置</h2>
+        <h2>AI 配置</h2>
         <p>API Key 状态：<strong id="settings-key-status">—</strong></p>
         <form id="form-settings">
-          <label>API Key（留空则不修改）</label>
-          <input name="api_key" type="password" placeholder="sk-..." autocomplete="off" />
-          <label>模型</label>
-          <input name="model" id="settings-model" value="deepseek-chat" />
-          <label>个人材料（PDF / Word / Markdown / TXT）</label>
-          <p class="preview" id="profile-status">尚未上传。匹配评估和邮箱话术会直接读取这份文档。</p>
-          <input id="profile-file" type="file" accept=".pdf,.docx,.txt,.md,.markdown,.prd,application/pdf" />
-          <button class="btn btn-secondary" id="btn-profile" type="button">上传文档</button>
-          <label>已提取文本预览</label>
-          <textarea id="settings-profile" rows="8" readonly placeholder="上传后在这里预览提取出的文字"></textarea>
+          <div class="field-grid">
+            <div>
+              <label>API Key</label>
+              <input name="api_key" type="password" autocomplete="off" />
+            </div>
+            <div>
+              <label>Base URL</label>
+              <input name="base_url" id="settings-base-url" />
+            </div>
+            <div>
+              <label>模型名称</label>
+              <input name="model" id="settings-model" />
+            </div>
+          </div>
+          <label>个人材料</label>
+          <div class="field-grid">
+            <div>
+              <label>主题</label>
+              <input id="profile-topic" />
+            </div>
+            <div>
+              <label>文件</label>
+              <input id="profile-file" type="file" multiple accept=".pdf,.docx,.txt,.md,.markdown,.prd,application/pdf" />
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="btn-profile" type="button">上传材料</button>
+          <div id="profile-list" style="margin-top:1rem"></div>
           <button type="submit" class="btn">保存设置</button>
         </form>
-        <p style="font-size:0.85rem;color:var(--muted);margin-top:1rem">
-          Key 保存在本地 <code>data/settings.json</code>，不会提交到 Git。
-        </p>
       </div>
     </section>
   </main>
 
   <div class="toast" id="toast"></div>
-  <script src="/static/js/app.js?v=5"></script>
+  <script src="/static/js/app.js?v=15"></script>
 </body>
 </html>

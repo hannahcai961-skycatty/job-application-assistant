@@ -1,28 +1,29 @@
 import base64
-import json
 from pathlib import Path
-from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from ..config import settings
 from ..doctor import run_doctor
 from ..models.schemas import (
     AIGenerateRequest,
     AIMatchRequest,
+    Job,
     OcrResult,
+    ProfileDocView,
+    ProfileUpdate,
     SettingsUpdate,
     SettingsView,
 )
-from ..models.schemas import Job
 from ..services.deepseek import (
     DeepSeekError,
     analyze_match,
     extract_ocr,
     generate_email_draft,
 )
-from ..config import DATA_DIR
 from ..services.documents import extract_document
 from ..services.pipeline import resolve_company_name
+from ..services import profiles as profile_store
 from ..services.states import load_states_config
 from ..services.storage import load_collection, load_settings, save_settings
 
@@ -30,18 +31,23 @@ router = APIRouter(prefix="/api", tags=["ai", "settings", "meta", "ingest"])
 
 
 def _profile_text() -> str:
-    extracted = DATA_DIR / "profile" / "extracted.txt"
-    text = ""
-    if extracted.exists():
-        text = extracted.read_text(encoding="utf-8").strip()
-    if not text:
-        text = (load_settings().get("profile_text") or "").strip()
+    text = profile_store.format_profiles_for_prompt().strip()
     if not text:
         raise HTTPException(
             status_code=400,
-            detail="请先在「设置」中上传简历或简介文档（PDF / Word / Markdown / TXT）",
+            detail="请先在「设置」中上传至少一份个人材料，并为每份填写主题",
         )
     return text
+
+
+def _settings_view() -> SettingsView:
+    data = load_settings()
+    return SettingsView(
+        deepseek_api_key_set=bool(data.get("deepseek_api_key") or settings.deepseek_api_key),
+        deepseek_model=data.get("deepseek_model") or settings.deepseek_model,
+        deepseek_base_url=data.get("deepseek_base_url") or settings.deepseek_base_url,
+        profiles=profile_store.to_views(),
+    )
 
 
 def _resolve_jd(job_id: str | None, jd_text: str) -> str:
@@ -67,14 +73,7 @@ def get_states() -> dict:
 
 @router.get("/settings", response_model=SettingsView)
 def get_settings() -> SettingsView:
-    data = load_settings()
-    preview = (data.get("profile_text") or "").strip()
-    return SettingsView(
-        deepseek_api_key_set=bool(data.get("deepseek_api_key")),
-        deepseek_model=data.get("deepseek_model", "deepseek-chat"),
-        profile_filename=data.get("profile_filename", ""),
-        profile_preview=preview[:800],
-    )
+    return _settings_view()
 
 
 @router.put("/settings", response_model=SettingsView)
@@ -84,41 +83,73 @@ def update_settings(payload: SettingsUpdate) -> SettingsView:
         data["deepseek_api_key"] = payload.deepseek_api_key
     if payload.deepseek_model is not None:
         data["deepseek_model"] = payload.deepseek_model
+    if payload.deepseek_base_url is not None:
+        data["deepseek_base_url"] = payload.deepseek_base_url.strip().rstrip("/")
     save_settings(data)
-    return get_settings()
+    return _settings_view()
 
 
-@router.post("/profile/upload", response_model=SettingsView)
-async def upload_profile(file: UploadFile = File(...)) -> SettingsView:
-    raw = await file.read()
-    if not raw:
-        raise HTTPException(status_code=400, detail="空文件")
-    if len(raw) > 15 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="文档请小于 15MB")
-    name = file.filename or "profile.txt"
-    try:
-        text = extract_document(name, raw).strip()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"无法读取该文档：{exc}") from exc
-    if not text:
-        raise HTTPException(
-            status_code=400,
-            detail="没有提取到文字。扫描版 PDF 请换成可复制文本的 PDF 或 Word。",
-        )
+@router.get("/profiles")
+def list_profiles() -> list[ProfileDocView]:
+    return profile_store.to_views()
 
-    folder = DATA_DIR / "profile"
-    folder.mkdir(parents=True, exist_ok=True)
-    suffix = Path(name).suffix.lower() or ".bin"
-    (folder / f"source{suffix}").write_bytes(raw)
-    (folder / "extracted.txt").write_text(text, encoding="utf-8")
 
-    data = load_settings()
-    data["profile_text"] = text
-    data["profile_filename"] = name
-    save_settings(data)
-    return get_settings()
+@router.post("/profiles/upload", response_model=SettingsView)
+async def upload_profiles(
+    files: list[UploadFile] = File(...),
+    topic: str = Form(""),
+) -> SettingsView:
+    if not files:
+        raise HTTPException(status_code=400, detail="请选择至少一个文件")
+
+    shared_topic = (topic or "").strip()
+    uploaded = 0
+    for file in files:
+        raw = await file.read()
+        if not raw:
+            continue
+        if len(raw) > 15 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail=f"{file.filename} 超过 15MB")
+        name = file.filename or "profile.txt"
+        try:
+            text = extract_document(name, raw).strip()
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=f"{name}: {exc}") from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"{name} 无法读取：{exc}") from exc
+        if not text:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{name} 没有提取到文字。扫描版 PDF 请换成可复制文本的 PDF 或 Word。",
+            )
+        # 多文件时：有统一主题则「主题 · 文件名」区分；单文件用统一主题或文件名
+        if shared_topic and len(files) > 1:
+            doc_topic = f"{shared_topic} · {Path(name).stem}"
+        elif shared_topic:
+            doc_topic = shared_topic
+        else:
+            doc_topic = Path(name).stem or "未命名材料"
+        profile_store.add_profile(topic=doc_topic, filename=name, content=text, raw=raw)
+        uploaded += 1
+
+    if not uploaded:
+        raise HTTPException(status_code=400, detail="没有成功上传任何文件")
+    return _settings_view()
+
+
+@router.put("/profiles/{item_id}", response_model=SettingsView)
+def update_profile(item_id: str, payload: ProfileUpdate) -> SettingsView:
+    updated = profile_store.update_profile(item_id, topic=payload.topic)
+    if not updated:
+        raise HTTPException(status_code=404, detail="材料不存在")
+    return _settings_view()
+
+
+@router.delete("/profiles/{item_id}", response_model=SettingsView)
+def delete_profile(item_id: str) -> SettingsView:
+    if not profile_store.delete_profile(item_id):
+        raise HTTPException(status_code=404, detail="材料不存在")
+    return _settings_view()
 
 
 @router.post("/ingest/ocr", response_model=OcrResult)

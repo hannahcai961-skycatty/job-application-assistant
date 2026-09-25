@@ -24,6 +24,11 @@ def _resolve_model() -> str:
     return local or settings.deepseek_model
 
 
+def _resolve_base_url() -> str:
+    local = (load_settings().get("deepseek_base_url") or "").strip()
+    return (local or settings.deepseek_base_url).rstrip("/")
+
+
 async def chat_completion(
     prompt: str,
     temperature: float = 0.7,
@@ -32,9 +37,9 @@ async def chat_completion(
 ) -> str:
     api_key = _resolve_api_key()
     if not api_key:
-        raise DeepSeekError("未配置 DeepSeek API Key，请在设置页或 .env 中填写")
+        raise DeepSeekError("未配置 API Key，请在「设置」的 AI 配置中填写")
 
-    url = f"{settings.deepseek_base_url.rstrip('/')}/chat/completions"
+    url = f"{_resolve_base_url()}/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -55,7 +60,7 @@ async def chat_completion(
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(url, headers=headers, json=payload)
         if response.status_code != 200:
-            raise DeepSeekError(f"DeepSeek 请求失败: {response.status_code} {response.text[:200]}")
+            raise DeepSeekError(f"模型请求失败: {response.status_code} {response.text[:300]}")
         data = response.json()
         return data["choices"][0]["message"]["content"]
 

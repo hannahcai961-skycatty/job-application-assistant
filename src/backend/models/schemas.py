@@ -14,8 +14,14 @@ class JobBase(BaseModel):
     position: str = ""
     jd_text: str = ""
     url: str = ""
-    source: Literal["boss", "email", "official", "wechat", "other"] = "other"
-    status: Literal["pending", "greeted", "emailed", "replied", "dropped"] = "pending"
+    source: Literal["fair", "official", "platform"] = "platform"
+    status: Literal[
+        "pending",
+        "applied",
+        "interview_pending",
+        "interviewing",
+        "rejected",
+    ] = "pending"
     applied_at: str = ""
     interview_round: str = ""
     notes: str = ""
@@ -36,14 +42,26 @@ class Job(JobBase):
 class SettingsUpdate(BaseModel):
     deepseek_api_key: str | None = None
     deepseek_model: str | None = None
-    profile_text: str | None = None
+    deepseek_base_url: str | None = None
+
+
+class ProfileDocView(BaseModel):
+    id: str
+    topic: str
+    filename: str
+    preview: str
+    created_at: str
+
+
+class ProfileUpdate(BaseModel):
+    topic: str
 
 
 class SettingsView(BaseModel):
     deepseek_api_key_set: bool
     deepseek_model: str
-    profile_filename: str = ""
-    profile_preview: str = ""
+    deepseek_base_url: str
+    profiles: list[ProfileDocView] = Field(default_factory=list)
 
 
 class AIMatchRequest(BaseModel):

@@ -1,12 +1,11 @@
 const API = "/api";
 
 const CHANNELS = [
-  ["boss", "Boss"],
-  ["email", "邮箱"],
+  ["fair", "招聘会"],
   ["official", "官网"],
-  ["wechat", "微信"],
-  ["other", "其他"],
+  ["platform", "求职平台"],
 ];
+const CHANNEL_LABELS = Object.fromEntries(CHANNELS);
 
 const state = {
   jobs: [],
@@ -98,15 +97,15 @@ function renderDashboard() {
   host.innerHTML = `
     <div class="table-wrap"><table class="sheet">
       <thead><tr>
-        <th>公司</th><th>岗位</th><th>状态</th><th>渠道</th><th>投递日</th><th>面试</th><th>分数</th><th>备注</th>
+        <th>公司</th><th class="col-position">岗位</th><th class="col-status">状态</th><th>渠道</th><th>投递日</th><th>面试</th><th>分数</th><th>备注</th>
       </tr></thead>
       <tbody>${rows
         .map(
           (j) => `<tr>
             <td>${escapeHtml(j.company)}</td>
-            <td>${escapeHtml(j.position)}</td>
-            <td>${escapeHtml(state.statusLabels[j.status] || j.status)}</td>
-            <td>${escapeHtml(j.source)}</td>
+            <td class="col-position">${escapeHtml(j.position)}</td>
+            <td class="col-status">${escapeHtml(state.statusLabels[j.status] || j.status)}</td>
+            <td>${escapeHtml(CHANNEL_LABELS[j.source] || j.source)}</td>
             <td>${escapeHtml(j.applied_at)}</td>
             <td>${escapeHtml(j.interview_round)}</td>
             <td>${j.match_score ?? "—"}</td>
@@ -128,9 +127,11 @@ function statusOptions(current) {
 }
 
 function channelOptions(current) {
+  const known = new Set(CHANNELS.map(([id]) => id));
+  const value = known.has(current) ? current : "platform";
   return CHANNELS.map(
     ([id, label]) =>
-      `<option value="${id}" ${id === current ? "selected" : ""}>${label}</option>`
+      `<option value="${id}" ${id === value ? "selected" : ""}>${label}</option>`
   ).join("");
 }
 
@@ -144,9 +145,9 @@ function renderTracker() {
     .map(
       (j) => `<tr data-id="${j.id}">
         <td><input data-f="company" value="${escapeHtml(j.company)}" /></td>
-        <td><input data-f="position" value="${escapeHtml(j.position)}" /></td>
+        <td class="col-position"><textarea data-f="position" rows="2">${escapeHtml(j.position)}</textarea></td>
         <td><select data-f="source">${channelOptions(j.source)}</select></td>
-        <td><select data-f="status">${statusOptions(j.status)}</select></td>
+        <td class="col-status"><select data-f="status">${statusOptions(j.status)}</select></td>
         <td><input data-f="applied_at" type="date" value="${escapeHtml(j.applied_at)}" /></td>
         <td><input data-f="interview_round" value="${escapeHtml(j.interview_round)}" /></td>
         <td><textarea data-f="notes">${escapeHtml(j.notes)}</textarea></td>
@@ -217,12 +218,50 @@ function renderSettings() {
   $("settings-key-status").textContent = state.settings?.deepseek_api_key_set
     ? "已配置"
     : "未配置";
-  $("settings-model").value = state.settings?.deepseek_model || "deepseek-chat";
-  const name = state.settings?.profile_filename;
-  $("profile-status").textContent = name
-    ? `当前文档：${name}。匹配评估和邮箱话术会读取这份文档。`
-    : "尚未上传。匹配评估和邮箱话术会直接读取这份文档。";
-  $("settings-profile").value = state.settings?.profile_preview || "";
+  $("settings-model").value = state.settings?.deepseek_model || "qwen-plus";
+  $("settings-base-url").value =
+    state.settings?.deepseek_base_url || "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  const profiles = state.settings?.profiles || [];
+
+  const list = $("profile-list");
+  if (!profiles.length) {
+    list.innerHTML = '<p class="empty">暂无材料</p>';
+    return;
+  }
+  list.innerHTML = profiles
+    .map(
+      (p) => `<div class="list-item" data-profile="${p.id}">
+        <div style="flex:1">
+          <label>主题</label>
+          <input data-topic="${p.id}" value="${escapeHtml(p.topic)}" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.35rem">
+          <button class="btn btn-secondary" data-save-topic="${p.id}" type="button">保存主题</button>
+          <button class="btn btn-secondary" data-del-profile="${p.id}" type="button">删除</button>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  list.querySelectorAll("[data-save-topic]").forEach((btn) => {
+    btn.onclick = async () => {
+      const topic = list.querySelector(`[data-topic="${btn.dataset.saveTopic}"]`)?.value?.trim();
+      if (!topic) return showToast("主题不能为空");
+      state.settings = await api(`/profiles/${btn.dataset.saveTopic}`, {
+        method: "PUT",
+        body: JSON.stringify({ topic }),
+      });
+      renderSettings();
+      showToast("主题已更新");
+    };
+  });
+  list.querySelectorAll("[data-del-profile]").forEach((btn) => {
+    btn.onclick = async () => {
+      state.settings = await api(`/profiles/${btn.dataset.delProfile}`, { method: "DELETE" });
+      renderSettings();
+      showToast("已删除");
+    };
+  });
 }
 
 function applyOcr(data, { jdId, companyId, positionId, urlId }) {
@@ -303,7 +342,9 @@ $("btn-eval-match").onclick = async () => {
       body: JSON.stringify({ jd_text: jd }),
     });
     state.lastMatch = result;
-    $("eval-output").textContent = `分数：${result.score ?? "—"}\n\n${result.reason || result.summary || ""}`;
+    const brief = result.summary || result.reason || "";
+    const detail = result.reason && result.reason !== result.summary ? `\n${result.reason}` : "";
+    $("eval-output").textContent = `分数：${result.score ?? "—"}\n\n${brief}${detail}`;
   } catch (err) {
     $("eval-output").textContent = `错误：${err.message}`;
   }
@@ -314,7 +355,7 @@ $("btn-eval-save").onclick = async () => {
   const position = $("eval-position").value.trim();
   if (!company && !position) return showToast("至少填写公司或岗位");
   const reason =
-    state.lastMatch?.reason || state.lastMatch?.summary || "";
+    state.lastMatch?.summary || state.lastMatch?.reason || "";
   await api("/jobs", {
     method: "POST",
     body: JSON.stringify({
@@ -322,11 +363,11 @@ $("btn-eval-save").onclick = async () => {
       position,
       url: $("eval-url").value.trim(),
       jd_text: $("eval-jd").value,
-      source: "other",
+      source: "platform",
       status: "pending",
       match_score: state.lastMatch?.score ?? null,
       match_reason: reason,
-      notes: reason ? `匹配理由：${reason}` : "",
+      notes: reason,
     }),
   });
   showToast("已写入投递表");
@@ -341,7 +382,7 @@ $("btn-add-job").onclick = async () => {
       company: "",
       position: "",
       status: "pending",
-      source: "other",
+      source: "platform",
     }),
   });
   await loadAll();
@@ -399,7 +440,10 @@ $("form-settings").onsubmit = async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
   const key = fd.get("api_key");
-  const body = { deepseek_model: fd.get("model") };
+  const body = {
+    deepseek_model: fd.get("model"),
+    deepseek_base_url: fd.get("base_url"),
+  };
   if (key) body.deepseek_api_key = key;
   await api("/settings", { method: "PUT", body: JSON.stringify(body) });
   e.target.querySelector('[name="api_key"]').value = "";
@@ -408,20 +452,24 @@ $("form-settings").onsubmit = async (e) => {
 };
 
 $("btn-profile").onclick = async () => {
-  const file = $("profile-file").files?.[0];
-  if (!file) return showToast("请先选择文档");
+  const input = $("profile-file");
+  const files = [...(input.files || [])];
+  if (!files.length) return showToast("请先选择至少一个文档");
   const fd = new FormData();
-  fd.append("file", file);
-  showToast("正在读取文档…");
+  files.forEach((f) => fd.append("files", f));
+  fd.append("topic", $("profile-topic").value.trim());
+  showToast(`正在读取 ${files.length} 份文档…`);
   try {
-    const res = await fetch(`${API}/profile/upload`, { method: "POST", body: fd });
+    const res = await fetch(`${API}/profiles/upload`, { method: "POST", body: fd });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || res.statusText);
     }
     state.settings = await res.json();
+    input.value = "";
+    $("profile-topic").value = "";
     renderSettings();
-    showToast("文档已上传，之后的分析会读取它");
+    showToast(`已上传 ${files.length} 份，主题已区分`);
   } catch (err) {
     showToast(err.message);
   }
