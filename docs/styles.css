@@ -1,0 +1,278 @@
+:root {
+  --ink: #1a222c;
+  --muted: #5a6570;
+  --line: #d5c8b6;
+  --paper: #f7f5f1;
+  --wash: #e8eef2;
+  --accent: #0f6e6a;
+  --accent-ink: #084845;
+  --frame: #c9d2d8;
+  --max: 40rem;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  background:
+    radial-gradient(120% 80% at 10% -10%, var(--wash) 0%, transparent 55%),
+    radial-gradient(90% 60% at 100% 0%, #efe8df 0%, transparent 45%),
+    linear-gradient(180deg, #faf8f5 0%, var(--paper) 40%, #f0ebe3 100%);
+}
+
+.page {
+  width: min(100% - 2.5rem, var(--max));
+  margin: 0 auto;
+  padding: 3.5rem 0 4rem;
+}
+
+.intro {
+  margin-bottom: 3rem;
+  animation: rise 0.7s ease both;
+}
+
+.brand {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 5vw, 2.35rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--accent-ink);
+}
+
+.intro h1 {
+  margin: 0 0 1rem;
+  font-family: var(--font-sans);
+  font-size: clamp(1.05rem, 2.4vw, 1.2rem);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+  max-width: 36rem;
+}
+
+.block {
+  padding: 2rem 0;
+  border-top: 1px solid var(--line);
+  animation: rise 0.7s ease both;
+}
+
+.block:nth-of-type(1) { animation-delay: 0.08s; }
+.block:nth-of-type(2) { animation-delay: 0.16s; }
+.block:nth-of-type(3) { animation-delay: 0.24s; }
+
+.block h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.section-note {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.section-note code,
+.demo-placeholder code,
+.split code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.35em;
+  background: rgba(15, 110, 106, 0.08);
+  border-radius: 3px;
+  color: var(--accent-ink);
+}
+
+.demo-frame {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 10px,
+      rgba(15, 110, 106, 0.03) 10px,
+      rgba(15, 110, 106, 0.03) 11px
+    ),
+    #e4eaee;
+  border: 1px solid var(--frame);
+  overflow: hidden;
+}
+
+.demo-frame video,
+.demo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #0f1418;
+}
+
+.demo-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.demo-placeholder[hidden],
+video[hidden],
+img[hidden] {
+  display: none !important;
+}
+
+.demo-placeholder span {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.demo-placeholder small {
+  font-size: 0.85rem;
+  max-width: 22rem;
+  line-height: 1.5;
+}
+
+.split {
+  display: grid;
+  gap: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .split {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+}
+
+.split h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.split ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.split li {
+  position: relative;
+  padding: 0.45rem 0 0.45rem 1rem;
+  color: var(--ink);
+  font-size: 0.98rem;
+  border-bottom: 1px solid rgba(213, 200, 182, 0.55);
+}
+
+.split li:last-child {
+  border-bottom: none;
+}
+
+.split li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.cta-block {
+  text-align: left;
+}
+
+.github-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.7rem 1.35rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: var(--accent);
+  border: 1px solid var(--accent-ink);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.github-btn:hover {
+  background: var(--accent-ink);
+  transform: translateY(-1px);
+}
+
+.github-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.foot {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  animation: rise 0.7s ease both;
+  animation-delay: 0.3s;
+}
+
+.foot p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

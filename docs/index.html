@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>秋招投递助手 · 作品展示</title>
+  <meta name="description" content="秋招投递助手：OCR 读 JD → 匹配评分 → 投递表跟踪 → 生成邮件话术。本地 Web，数据不上传。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="intro">
+      <p class="brand">秋招投递助手</p>
+      <h1>OCR 读 JD → 匹配评分 → 投递表跟踪 → 生成邮件话术</h1>
+      <p class="lede">本地 Web 助手：截图识岗、砍废话评估、按真实流程记状态，再生成可人工核对的邮件正文。不做线上试用，避免 API Key 与材料暴露。</p>
+    </header>
+
+    <section class="block" aria-labelledby="demo-heading">
+      <h2 id="demo-heading">演示</h2>
+      <p class="section-note">30–60 秒流程录屏。将文件放到 <code>docs/assets/demo.mp4</code> 或 <code>demo.gif</code> 即可替换，无需改页面结构。</p>
+      <div class="demo-frame" id="demo-frame">
+        <video id="demo-video" controls playsinline preload="metadata" hidden>
+          <source src="assets/demo.mp4" type="video/mp4" />
+        </video>
+        <img id="demo-gif" src="assets/demo.gif" alt="产品演示录屏" hidden />
+        <div class="demo-placeholder" id="demo-placeholder">
+          <span>待补录屏</span>
+          <small>放置 <code>assets/demo.mp4</code> 或 <code>assets/demo.gif</code> 后刷新本页</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="built-heading">
+      <h2 id="built-heading">你做了什么</h2>
+      <div class="split">
+        <div>
+          <h3>产品</h3>
+          <ul>
+            <li>砍废话评估：匹配分数 + 可执行理由，低分建议 skip</li>
+            <li>多材料分主题：简历 / 经历等按主题上传，供评估与话术引用</li>
+            <li>状态与渠道贴近真实投递流程（Boss / 邮箱等）</li>
+            <li>投递表链接可点、字段可编辑，评估结果可一键写入</li>
+          </ul>
+        </div>
+        <div>
+          <h3>技术</h3>
+          <ul>
+            <li>FastAPI + 本地 JSON 存储，数据不出本机</li>
+            <li>百炼兼容 API（可配 Base URL / 模型 / Key）</li>
+            <li>OCR 识图链路：上传或粘贴截图 → 填入 JD</li>
+            <li>Prompt 外置在 <code>templates/prompts/</code>，便于迭代文风</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block cta-block" aria-labelledby="code-heading">
+      <h2 id="code-heading">代码入口</h2>
+      <p class="section-note">本页是分享入口；仓库是代码附件。请在本地配置后运行，勿把 Key 与真实材料推上公开仓库。</p>
+      <a
+        class="github-btn"
+        href="https://github.com/hannahcai961-skycatty/job-application-assistant"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        在 GitHub 查看源码
+      </a>
+    </section>
+
+    <footer class="foot">
+      <p>本地工具 · 人工核对后再发送 · 非自动投递</p>
+    </footer>
+  </div>
+  <script>
+    (function () {
+      var video = document.getElementById("demo-video");
+      var gif = document.getElementById("demo-gif");
+      var placeholder = document.getElementById("demo-placeholder");
+
+      function show(el) {
+        el.hidden = false;
+        placeholder.hidden = true;
+      }
+
+      function tryGif() {
+        var probe = new Image();
+        probe.onload = function () {
+          gif.src = "assets/demo.gif";
+          show(gif);
+        };
+        probe.onerror = function () {};
+        probe.src = "assets/demo.gif?_=" + Date.now();
+      }
+
+      fetch("assets/demo.mp4", { method: "GET", cache: "no-store" })
+        .then(function (res) {
+          if (res.ok) {
+            video.src = "assets/demo.mp4";
+            show(video);
+            return;
+          }
+          tryGif();
+        })
+        .catch(tryGif);
+    })();
+  </script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 # Job Application Assistant
 
+> **作品展示页**（分享入口）：[https://hannahcai961-skycatty.github.io/job-application-assistant/](https://hannahcai961-skycatty.github.io/job-application-assistant/)  
+> 本仓库是**代码附件**；对外介绍与录屏请用展示页。开启方式：GitHub → Settings → Pages → Deploy from a branch → `main` / `/docs`。
+
 > **一句话**：秋招 AI 产品岗本地 Web 投递助手 → 根据 JD 自动评估匹配度、微调简历并生成 Boss 招呼语/邮件话术 → FastAPI + 原生 JS + DeepSeek API → `pip install -r requirements.txt`，配置 `.env` 后运行 `python -m src.backend.main`，浏览器打开 http://127.0.0.1:8000。
 
 秋招 **AI 产品岗**投递助手：JD 驱动改简历、生成 Boss 招呼语与邮箱话术，数据本地存储。
